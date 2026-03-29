@@ -1,0 +1,30 @@
+name: Build Nanobot Gateway Image
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Base community image version to wrap'
+        required: true
+        default: 'v0.1.4.post6'
+jobs:
+  build-wrapper:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.gateway
+          push: true
+          build-args: BASE_TAG=${{ github.event.inputs.tag }}
+          tags: |
+            ghcr.io/shudh/nanobot-community:${{ github.event.inputs.tag }}-gateway
+            ghcr.io/shudh/nanobot-community:latest-gateway
