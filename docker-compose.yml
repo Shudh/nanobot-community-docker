@@ -4,37 +4,42 @@ services:
     restart: unless-stopped
     entrypoint:
       - /bin/sh
-      - -lc
-    command: |
-      mkdir -p "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
-      cat > /root/.nanobot/config.json <<EOF
-      {
-        "providers": {
-          "openrouter": {
-            "apiKey": "$${OPENROUTER_API_KEY}"
+      - -c
+      - |
+        set -eu
+        : "$${CUSTOMER_SLUG:?CUSTOMER_SLUG is empty}"
+        
+        mkdir -p "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
+        
+        cat > /root/.nanobot/config.json <<EOF
+        {
+          "providers": {
+            "openrouter": {
+              "apiKey": "$${OPENROUTER_API_KEY}"
+            }
+          },
+          "agents": {
+            "defaults": {
+              "provider": "openrouter",
+              "model": "$${MODEL}",
+              "timezone": "$${TIMEZONE}",
+              "workspace": "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
+            }
+          },
+          "channels": {
+            "telegram": {
+              "enabled": true,
+              "token": "$${TELEGRAM_BOT_TOKEN}",
+              "allowFrom": ["$${TELEGRAM_ALLOW_FROM}"]
+            }
+          },
+          "tools": {
+            "restrictToWorkspace": true
           }
-        },
-        "agents": {
-          "defaults": {
-            "provider": "openrouter",
-            "model": "$${MODEL}",
-            "timezone": "$${TIMEZONE}",
-            "workspace": "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
-          }
-        },
-        "channels": {
-          "telegram": {
-            "enabled": true,
-            "token": "$${TELEGRAM_BOT_TOKEN}",
-            "allowFrom": ["$${TELEGRAM_ALLOW_FROM}"]
-          }
-        },
-        "tools": {
-          "restrictToWorkspace": true
         }
-      }
-      EOF
-      exec nanobot gateway --config /root/.nanobot/config.json --port 18790
+        EOF
+        
+        exec nanobot gateway --config /root/.nanobot/config.json --port 18790
     environment:
       CUSTOMER_SLUG: ${CUSTOMER_SLUG:?required}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?required}
@@ -55,4 +60,3 @@ services:
         reservations:
           cpus: "${CPU_RESERVATION:-0.25}"
           memory: "${MEMORY_RESERVATION:-256M}"
-          
