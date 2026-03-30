@@ -1,0 +1,56 @@
+services:
+  nanobot-gateway:
+    image: ghcr.io/shudh/nanobot-community:v0.1.4.post6-gateway
+    restart: unless-stopped
+    entrypoint:
+      - /bin/sh
+      - -lc
+    command: |
+      mkdir -p "/root/.nanobot/workspaces/${CUSTOMER_SLUG:?required}"
+      cat > /root/.nanobot/config.json <<EOF
+      {
+        "providers": {
+          "openrouter": {
+            "apiKey": "${OPENROUTER_API_KEY:?required}"
+          }
+        },
+        "agents": {
+          "defaults": {
+            "provider": "openrouter",
+            "model": "${MODEL:-anthropic/claude-opus-4-5}",
+            "timezone": "${TIMEZONE:-Asia/Kolkata}",
+            "workspace": "/root/.nanobot/workspaces/${CUSTOMER_SLUG:?required}"
+          }
+        },
+        "channels": {
+          "telegram": {
+            "enabled": true,
+            "token": "${TELEGRAM_BOT_TOKEN:?required}",
+            "allowFrom": ["${TELEGRAM_ALLOW_FROM:?required}"]
+          }
+        },
+        "tools": {
+          "restrictToWorkspace": true
+        }
+      }
+      EOF
+      exec nanobot gateway --config /root/.nanobot/config.json --port 18790
+    environment:
+      CUSTOMER_SLUG: ${CUSTOMER_SLUG:?required}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?required}
+      MODEL: ${MODEL:-anthropic/claude-opus-4-5}
+      TIMEZONE: ${TIMEZONE:-Asia/Kolkata}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?required}
+      TELEGRAM_ALLOW_FROM: ${TELEGRAM_ALLOW_FROM:?required}
+    volumes:
+      - type: bind
+        source: ./nanobot-data
+        target: /root/.nanobot
+    deploy:
+      resources:
+        limits:
+          cpus: "${CPU_LIMIT:-1}"
+          memory: "${MEMORY_LIMIT:-1G}"
+        reservations:
+          cpus: "${CPU_RESERVATION:-0.25}"
+          memory: "${MEMORY_RESERVATION:-256M}"
