@@ -1,32 +1,32 @@
 services:
   nanobot-gateway:
-    image: ghcr.io/shudh/nanobot-community:v0.1.4.post6-gateway
+    image: ghcr.io/shudh/nanobot-community:${IMAGE_TAG:-v0.1.4.post6-gateway}
     restart: unless-stopped
     entrypoint:
       - /bin/sh
       - -lc
     command: |
-      mkdir -p "/root/.nanobot/workspaces/${CUSTOMER_SLUG:?required}"
+      mkdir -p "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
       cat > /root/.nanobot/config.json <<EOF
       {
         "providers": {
           "openrouter": {
-            "apiKey": "${OPENROUTER_API_KEY:?required}"
+            "apiKey": "$${OPENROUTER_API_KEY}"
           }
         },
         "agents": {
           "defaults": {
             "provider": "openrouter",
-            "model": "${MODEL:-anthropic/claude-opus-4-5}",
-            "timezone": "${TIMEZONE:-Asia/Kolkata}",
-            "workspace": "/root/.nanobot/workspaces/${CUSTOMER_SLUG:?required}"
+            "model": "$${MODEL}",
+            "timezone": "$${TIMEZONE}",
+            "workspace": "/root/.nanobot/workspaces/$${CUSTOMER_SLUG}"
           }
         },
         "channels": {
           "telegram": {
             "enabled": true,
-            "token": "${TELEGRAM_BOT_TOKEN:?required}",
-            "allowFrom": ["${TELEGRAM_ALLOW_FROM:?required}"]
+            "token": "$${TELEGRAM_BOT_TOKEN}",
+            "allowFrom": ["$${TELEGRAM_ALLOW_FROM}"]
           }
         },
         "tools": {
@@ -38,7 +38,7 @@ services:
     environment:
       CUSTOMER_SLUG: ${CUSTOMER_SLUG:?required}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?required}
-      MODEL: ${MODEL:-anthropic/claude-opus-4-5}
+      MODEL: ${MODEL:-deepseek/deepseek-v3.2}
       TIMEZONE: ${TIMEZONE:-Asia/Kolkata}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?required}
       TELEGRAM_ALLOW_FROM: ${TELEGRAM_ALLOW_FROM:?required}
@@ -46,6 +46,7 @@ services:
       - type: bind
         source: ./nanobot-data
         target: /root/.nanobot
+        is_directory: true
     deploy:
       resources:
         limits:
